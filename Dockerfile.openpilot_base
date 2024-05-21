@@ -3,6 +3,7 @@ FROM ubuntu:20.04
 ENV PYTHONUNBUFFERED 1
 
 ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends sudo tzdata locales ssh pulseaudio xvfb x11-xserver-utils gnome-screenshot && \
     rm -rf /var/lib/apt/lists/*
@@ -13,14 +14,15 @@ ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
 COPY tools/install_ubuntu_dependencies.sh /tmp/tools/
-RUN cd /tmp && \
-    tools/install_ubuntu_dependencies.sh && \
+RUN INSTALL_EXTRA_PACKAGES=no tools/install_ubuntu_dependencies.sh && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /tmp/* && \
+    rm -rf /usr/share/vim/vim81/doc && \
+    rm -rf /usr/lib/python2.7 && \
     # remove unused architectures from gcc for panda
     cd /usr/lib/gcc/arm-none-eabi/9.2.1 && \
     rm -rf arm/ && \
-    rm -rf thumb/nofp thumb/v6* thumb/v8* thumb/v7+fp thumb/v7-r+fp.sp
+    rm -rf thumb/nofp thumb/v6* thumb/v8* thumb/v7+fp thumb/v7-r+fp.sp thumb/v7-m/nofp thumb/v7e-m/nofp thumb/v7/nofp
 
 # Add OpenCL
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -36,7 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     vim \
     lsb-core \
     libx11-6 \
-  && rm -rf /var/lib/apt/lists/*
+  && apt-get clean && apt-get autoremove && apt-get purge && rm -rf /var/lib/apt/lists/*
 
 ARG INTEL_DRIVER=l_opencl_p_18.1.0.015.tgz
 ARG INTEL_DRIVER_URL=https://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/15532
@@ -52,6 +54,7 @@ RUN cd /tmp/opencl-driver-intel && \
     mkdir -p /etc/OpenCL/vendors && \
     echo /opt/intel/opencl_compilers_and_libraries_18.1.0.015/linux/compiler/lib/intel64_lin/libintelocl.so > /etc/OpenCL/vendors/intel.icd && \
     cd / && \
+    rm -rf /opt/intel/opencl_compilers_and_libraries_18.1.0.015/uninstall && \
     rm -rf /tmp/opencl-driver-intel
 
 ENV NVIDIA_VISIBLE_DEVICES all
@@ -78,6 +81,10 @@ COPY --chown=$USER tools/install_python_dependencies.sh /tmp/tools/
 RUN cd /tmp && \
     tools/install_python_dependencies.sh && \
     rm -rf /tmp/* && \
+    rm -rf /home/batman/pyenv/versions/3.11.4/lib/python3.11/site-packages/SCons/Tool/docbook && \
+    rm -rf /home/batman/pyenv/versions/3.11.4/lib/python3.11/site-packages/onnx/backend/test && \
+    rm -rf /home/batman/pyenv/versions/3.11.4/lib/python3.11/site-packages/pygame/docs && \
+    rm -rf /home/batman/pyenv/versions/3.11.4/lib/python3.11/site-packages/scipy/spatial/tests && \
     rm -rf /home/$USER/.cache && \
     find /home/$USER/pyenv -type d -name ".git" | xargs rm -rf && \
     rm -rf /home/$USER/pyenv/versions/3.11.4/lib/python3.11/test
